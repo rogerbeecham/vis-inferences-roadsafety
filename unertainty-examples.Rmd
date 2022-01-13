@@ -199,7 +199,7 @@ rate_boots_temporal <- ped_veh %>%
   )  
 
 # Animate over bootstrap resamples using gganimate::transition_states().
-hop <- rate_boots_temporal %>% ungroup() %>% 
+rate_boots_temporal %>% ungroup() %>% 
   mutate(
     year=as.character(year),
     lad=factor(
