@@ -1,5 +1,5 @@
-# Supplemental materials for the paper _A framework for inserting visually-supported inferences into geographical analysis workflow: application to road crash analysis_.
-
+Supplementary materials for the paper _A framework for inserting visually-supported inferences into geographical analysis workflow: application to road crash analysis_. [![DOI](https://zenodo.org/badge/444834651.svg)](https://zenodo.org/badge/latestdoi/444834651)
+=========================================================================================================================================================
 
 _Roger&nbsp;Beecham ([r.j.beecham@leeds.ac.uk](mailto:r.j.beecham@leeds.ac.uk))_<br>
 _Robin&nbsp;Lovelace ([r.lovelace@leeds.ac.uk](mailto:r.lovelace@leeds.ac.uk))_
