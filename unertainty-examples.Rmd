@@ -164,7 +164,7 @@ rate_boots %>%
 Since STATS19 is released annuallyit is instructive to explore the stability of local authority KSI rates year-on-year. Below we represent KSI rates from the full dataset using a thick line and to help communicate stability in the year-on-year changes, we animate over lines produced from bootrstrap resamples of the year-on-year data. These sorts of Hypothetical Outcome Plots have been demonstrated to be effective at uncertainty represetation,  giving analysts a more "visceral" experience of volatility and range in possible outcomes (see [Kale and Hullman 2018](https://medium.com/@uwdata/hypothetical-outcome-plots-hops-help-users-separate-signal-from-noise-870d4e2b75d7)). They are again straightforward to implement in `ggplot2` with [`gganimate`](https://gganimate.com/).
 
 
-![](./img/hop2.gif)
+![](./img/hop.gif)
 
 ```{r rate-bootstrap-temporal, echo=TRUE, eval=FALSE, message=FALSE}
 # Update bootstrap template, nesting by year.

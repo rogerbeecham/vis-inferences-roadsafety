@@ -247,7 +247,7 @@ Hullman 2018](https://medium.com/@uwdata/hypothetical-outcome-plots-hops-help-us
 They are again straightforward to implement in `ggplot2` with
 [`gganimate`](https://gganimate.com/).
 
-![](./img/hop2.gif)
+![](./img/hop.gif)
 
 ``` r
 # Update bootstrap template, nesting by year.
