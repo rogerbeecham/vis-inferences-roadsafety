@@ -165,29 +165,34 @@ re-usable templates for generating and organising bootstraps.
 
 ``` r
 rate_boots <- ped_veh %>%
-  mutate(
-    is_ksi=accident_severity!="Slight",
-    year=lubridate::year(date)
-  ) %>%
-  filter(year==2019,
-         local_authority_district %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")
-         ) %>%
-  # Select out LAD code and is_ksi as no other crash context required.
-  select(local_authority_district, is_ksi) %>%
-  # Nesting to collapse data to a list-col.
-  nest(-local_authority_district) %>%
-  # Resample observations from this data frame with replacement, keep original data.
-  mutate(la_boot=map(data, rsample::bootstraps, times=1000, apparent=TRUE)) %>%
-  select(-data) %>%
-  # Unnest to generate data frame of bootstrap IDs and associated data, stored in splits.
-  unnest(la_boot) %>%
-  # Map over splits and extract ksi rate.
-  mutate(
-    is_ksi=map(splits, ~ rsample::analysis(.) %>% pull(is_ksi)),
-    ksi_rate=map_dbl(is_ksi, ~mean(.x)),
-    sample_size=map_dbl(is_ksi, ~length(.x))
-  ) %>%
-  select(-c(splits, is_ksi))
+    mutate(
+      is_ksi=accident_severity!="Slight",
+      year=lubridate::year(date)
+    ) %>%
+    filter(year==2019) %>%
+    # Select out LAD code and is_ksi as no other crash context required.
+    select(local_authority_district, is_ksi) %>%
+    # Nesting to collapse data to a list-col.
+    nest(data=c(local_authority_district, is_ksi)) %>%
+    # Resample observations from this data frame with replacement, keep original data.
+    mutate(la_boot=map(data, rsample::bootstraps, times=100, apparent=TRUE)) %>%
+    select(-data) %>%
+    # Unnest to generate data frame of bootstrap IDs and associated data, stored in splits.
+    unnest(la_boot) %>%
+    # Map over splits and extract LAD code.
+    mutate(
+      lad=map(splits, ~rsample::analysis(.) %>% pull(local_authority_district)),
+      is_ksi=map(splits, ~ rsample::analysis(.) %>% pull(is_ksi))
+    ) %>%
+    # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
+    select(-splits) %>% unnest(c(lad,is_ksi)) %>% ungroup %>% 
+  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>% 
+  # Calculate ksi rates for resamples.
+  group_by(lad, id) %>% 
+  summarise(
+    ksi_rate= mean(is_ksi),
+    sample_size=n()
+  )  
 ```
 
 ## Uncertainty representation: gradients/half-eyes
@@ -212,7 +217,7 @@ likely.
 
 ``` r
 rate_boots %>%
-  group_by(local_authority_district) %>%
+  group_by(lad) %>%
   # Calculate ranges.
   mutate(
     std.error=sd(ksi_rate), 
@@ -220,7 +225,7 @@ rate_boots %>%
     upper=quantile(ksi_rate,probs=.975)
     ) %>%
   filter(id=="Apparent") %>%
-  ggplot(aes(x=reorder(local_authority_district, ksi_rate), y=ksi_rate)) +
+  ggplot(aes(x=reorder(lad, ksi_rate), y=ksi_rate)) +
   stat_dist_halfeye(
     aes(dist = dist_normal(mu = ksi_rate, sigma = std.error)),
     point_size = 1.5) +
@@ -242,35 +247,46 @@ Hullman 2018](https://medium.com/@uwdata/hypothetical-outcome-plots-hops-help-us
 They are again straightforward to implement in `ggplot2` with
 [`gganimate`](https://gganimate.com/).
 
-![](./img/hop.gif)
+![](./img/hop2.gif)
 
 ``` r
-# Update our bootstrap template, nesting by year.
+# Update bootstrap template, nesting by year.
 rate_boots_temporal <- ped_veh %>%
-  mutate(
-    is_ksi=if_else(accident_severity=="Slight", FALSE, TRUE),
-    year=lubridate::year(date)
-  ) %>%
-  filter(local_authority_district %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")
-  ) %>%
-  select(local_authority_district, is_ksi, year) %>%
-  nest(-c(local_authority_district, year)) %>%
-  mutate(la_boot = map(data, rsample::bootstraps, times=50, apparent=TRUE)) %>%
-  select(-data) %>%
-  unnest(la_boot) %>%
-  mutate(
-    is_ksi=map(splits, ~ rsample::analysis(.) %>% pull(is_ksi)),
-    ksi_rate=map_dbl(is_ksi, ~mean(.x)),
-    sample_size=map_dbl(is_ksi, ~length(.x))
-  ) %>%
-  select(-c(splits, is_ksi))
+    mutate(
+      is_ksi=accident_severity!="Slight",
+      year=lubridate::year(date)
+    ) %>%
+    # Select out LAD code and is_ksi as no other crash context required.
+    select(local_authority_district, is_ksi, year) %>%
+    # Nesting to collapse data to a list-col.
+    nest(data=c(local_authority_district, is_ksi, year)) %>%
+    # Resample observations from this data frame with replacement, keep original data.
+    mutate(la_boot=map(data, rsample::bootstraps, times=50, apparent=TRUE)) %>%
+    select(-data) %>%
+    # Unnest to generate data frame of bootstrap IDs and associated data, stored in splits.
+    unnest(la_boot) %>%
+    # Map over splits and extract LAD code.
+    mutate(
+      lad=map(splits, ~rsample::analysis(.) %>% pull(local_authority_district)),
+      is_ksi=map(splits, ~ rsample::analysis(.) %>% pull(is_ksi)),
+      year=map(splits, ~ rsample::analysis(.) %>% pull(year))
+    ) %>%
+    # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
+    select(-splits) %>% unnest(c(lad,is_ksi, year)) %>% ungroup %>% 
+  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>% 
+  # Calculate ksi rates for resamples.
+  group_by(lad, id, year) %>% 
+  summarise(
+    ksi_rate= mean(is_ksi),
+    sample_size=n()
+  )  
 
 # Animate over bootstrap resamples using gganimate::transition_states().
-hop <- rate_boots_temporal %>%
+hop <- rate_boots_temporal %>% ungroup() %>% 
   mutate(
     year=as.character(year),
-    local_authority_district=factor(
-      local_authority_district, levels=c("Cotswold", "Sheffield", "Bromsgrove", "Bristol, City of")
+    lad=factor(
+      lad, levels=c("Cotswold", "Sheffield", "Bromsgrove", "Bristol, City of")
     )
   ) %>%
   ggplot(aes(x=year, y=ksi_rate)) +
@@ -280,7 +296,7 @@ hop <- rate_boots_temporal %>%
   geom_line(
     data=. %>% filter(id=="Apparent") %>% mutate(id_apparent=id) %>% select(-id), aes(group=id_apparent), size=.7, alpha=.2
   ) +
-  facet_wrap(~local_authority_district, nrow=1) +
+  facet_wrap(~lad, nrow=1) +
   theme(
     axis.text.x=element_blank(), axis.text.y=element_blank()
   ) +
