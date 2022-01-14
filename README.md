@@ -7,7 +7,7 @@ _Robin&nbsp;Lovelace ([r.lovelace@leeds.ac.uk](mailto:r.lovelace@leeds.ac.uk))_
 
 This repository contains supplementary materials for:
 
-Beecham, R. and Lovelace, R. _A framework for inserting visually-supported inferences into geographical analysis workflow: application to road crash analysis_. DOI: []().
+Beecham, R. and Lovelace, R. _A framework for inserting visually-supported inferences into geographical analysis workflow: application to road crash analysis_. DOI: [10.31219/osf.io/mfja8](https://doi.org/10.31219/osf.io/mfja8).
 
 
 ## Repository contents
