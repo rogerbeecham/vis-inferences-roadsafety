@@ -9,9 +9,9 @@ paper.
 
 Please cite:
 
-Beecham, R. and Lovelace, R. *A framework for inserting
+Beecham, R. and Lovelace, R. "A framework for inserting
 visually-supported inferences into geographical analysis workflow:
-application to road crash analysis*. DOI: []().
+application to road crash analysis", *Geographical Analysis*. DOI: [0.1111/gean.12338](https://doi.org/10.1111/gean.12338).
 
 ## Setup
 
@@ -28,7 +28,7 @@ pkgs <- c("tidyverse","sf", "here", "lme4", "lubridate", "rsample", "ggdist", "d
 # If not already installed.
 # install.packages(pkgs)
 # Core packages.
-library(tidyverse)              # Bundle of packages for data manipulation. 
+library(tidyverse)              # Bundle of packages for data manipulation.
 library(sf)                     # For working with geospatial data.
 ```
 
@@ -39,7 +39,7 @@ additional short helper functions. Load these into the environment using
 the call to `source()` below.
 
 ``` r
-# Load plot helper functions. 
+# Load plot helper functions.
 source(here::here("R", "plot_helpers.R"))
 ```
 
@@ -58,7 +58,7 @@ I have placed these in the [`/data`](/data) folder.
 ``` r
 # Crash data.
 ped_veh <- fst::read_fst(here::here("data", "ped_veh.fst"))
-# LAD context. 
+# LAD context.
 # Boundary data simplified using mapshapr (https://github.com/mbloch/mapshaper).
 lad <- st_read(here::here("data", "lad.geojson"))
 ```
@@ -82,22 +82,22 @@ result of boundary changes.
 
 ``` r
 ped_veh <- st_as_sf(
-  x=ped_veh %>% filter(!is.na(location_easting_osgr)), 
+  x=ped_veh %>% filter(!is.na(location_easting_osgr)),
   coords=c("location_easting_osgr", "location_northing_osgr"),
   crs=27700
   )
 # Spatial join on boundary data.
-ped_veh <- st_join(ped_veh, lad %>% select(lad19cd)) %>% st_drop_geometry() 
+ped_veh <- st_join(ped_veh, lad %>% select(lad19cd)) %>% st_drop_geometry()
 # Identify records to match on names -- e.g. those not successfully spatially joined.
-lad_names_match <- ped_veh %>% filter(is.na(lad19cd)) %>% 
-  select(local_authority_district) %>% unique 
+lad_names_match <- ped_veh %>% filter(is.na(lad19cd)) %>%
+  select(local_authority_district) %>% unique
 # Inspect those boundary change LADs that can't be matched (e.g. NA on this text join).
-lad_names_match %>% 
-  left_join(lad %>% st_drop_geometry(), by=c("local_authority_district"="lad19nm")) %>% 
+lad_names_match %>%
+  left_join(lad %>% st_drop_geometry(), by=c("local_authority_district"="lad19nm")) %>%
   View()
 
 # Manually recode those not matching and join.
-ped_veh <- ped_veh %>% 
+ped_veh <- ped_veh %>%
   left_join(lad  %>% st_drop_geometry() %>% select(lad_code=lad19cd, lad19nm),
             by=c("local_authority_district"="lad19nm")) %>%
   mutate(
@@ -116,16 +116,16 @@ ped_veh <- ped_veh %>%
       match_failed & la_renamed == "Purbeck" ~ "Dorset",
       match_failed & la_renamed == "Weymouth and Portland" ~ "Dorset",
     TRUE ~ "")
-  ) %>% 
-  select(-lad_code) %>% 
+  ) %>%
+  select(-lad_code) %>%
   left_join(lad %>% st_drop_geometry() %>% select(lad_code=lad19cd, lad19nm),
-            by=c("local_authority_district"="lad19nm")) %>% 
-  mutate(lad19cd=if_else(is.na(lad19cd), lad_code, lad19cd)) %>% 
-  select(-c(lad_code, la_renamed)) %>% 
+            by=c("local_authority_district"="lad19nm")) %>%
+  mutate(lad19cd=if_else(is.na(lad19cd), lad_code, lad19cd)) %>%
+  select(-c(lad_code, la_renamed)) %>%
   # Bring in correct names.
-  left_join(lad %>% st_drop_geometry() %>% select(lad19cd, lad19nm)) %>% 
+  left_join(lad %>% st_drop_geometry() %>% select(lad19cd, lad19nm)) %>%
   # Clean out non-England LADs.
-  filter(str_detect(lad19cd,"^E0*")) 
+  filter(str_detect(lad19cd,"^E0*"))
 ```
 
 ## Data processing
@@ -144,12 +144,12 @@ accordingly.
 ``` r
 # Calculate LAD crash rates.
 observed_rates <- ped_veh %>%
-  mutate(year=lubridate::year(date)) %>% 
+  mutate(year=lubridate::year(date)) %>%
   # Crashes occurring in 2019 only.
   filter(year==2019) %>%
-  group_by(lad19cd) %>% 
-  summarise(crash_count=n()) %>% 
-  inner_join(lad %>% st_drop_geometry()) %>%  
+  group_by(lad19cd) %>%
+  summarise(crash_count=n()) %>%
+  inner_join(lad %>% st_drop_geometry()) %>%
   mutate(
     growth=res_2019/res_2011,
     workday_2019=workday*growth,
@@ -160,9 +160,9 @@ observed_rates <- ped_veh %>%
   )
 
 # Calculate national average crash rate.
-crash_nat <- observed_rates %>% 
+crash_nat <- observed_rates %>%
   summarise(crash_rate=sum(crash_count)/(sum(res_2019)/100000)) %>% pull(crash_rate)
-crash_nat_adj <- observed_rates %>% 
+crash_nat_adj <- observed_rates %>%
   summarise(crash_rate=sum(crash_count)/(sum(avg_pop)/100000)) %>% pull(crash_rate)
 ```
 
@@ -173,8 +173,8 @@ rate variables with the two different denominators.
 
 ``` r
 observed_rates %>%
-  pivot_longer(cols=c(crash_rate, crash_rate_adj)) %>% 
-  mutate(name=if_else(name=="crash_rate", "residential", "residential |\nworkplace ")) %>% 
+  pivot_longer(cols=c(crash_rate, crash_rate_adj)) %>%
+  mutate(name=if_else(name=="crash_rate", "residential", "residential |\nworkplace ")) %>%
   ggplot() +
   geom_histogram(aes(value), fill="#08519c", alpha=.7) +
   geom_vline(aes(xintercept=37.6), alpha=.5, size=.3) +
@@ -192,10 +192,10 @@ rate estimates on each resample.
 
 ``` r
 boots_lad <- ped_veh %>%
-  mutate(year=lubridate::year(date)) %>% 
+  mutate(year=lubridate::year(date)) %>%
   filter(year==2019) %>%
   # Select out LAD code as no other crash context required.
-  select(lad19cd) %>% 
+  select(lad19cd) %>%
   # Nesting to collapse data to a list-col.
   nest(data=c(lad19cd)) %>%
   # Resample observations from data contained in list-col with replacement, keep original data.
@@ -205,21 +205,21 @@ boots_lad <- ped_veh %>%
   # Map over splits and extract LAD code.
   mutate(
     lad19cd=map(splits, ~rsample::analysis(.) %>% pull(lad19cd))
-  ) %>% 
+  ) %>%
   # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
   select(-splits) %>% unnest(lad19cd) %>%
   # Summarise over bootstrap ID and LAD to generate sampling distribution of crash counts.
   group_by(id, lad19cd) %>%
-  summarise(crash_count=n()) %>% ungroup %>% 
+  summarise(crash_count=n()) %>% ungroup %>%
   # Compute range in bootstrap sampling distribution for each LAD.
-  group_by(lad19cd) %>% 
+  group_by(lad19cd) %>%
   mutate(
     lower=quantile(crash_count,probs=.025, names=FALSE), upper=quantile(crash_count,probs=.975, names=FALSE)
-    ) %>% ungroup %>% 
+    ) %>% ungroup %>%
   # Work on full/original dataset for re-computing estimated rates.
-  filter(id=="Apparent")  %>% 
-  left_join(lad %>% st_drop_geometry()) %>% 
-  group_by(lad19cd) %>% 
+  filter(id=="Apparent")  %>%
+  left_join(lad %>% st_drop_geometry()) %>%
+  group_by(lad19cd) %>%
   mutate(
     growth=res_2019/res_2011,
     workday_2019=workday*growth,
@@ -240,9 +240,9 @@ plots, using [Matt Kay’s](https://www.mjskay.com/)
 ![Gradient plots of highest and lowest crash rates](./img/gradients.svg)
 
 ``` r
-boots_lad %>%   
-  top_n(25, crash_rate) %>% 
-  mutate(std.error=(upper-lower)/2) %>% 
+boots_lad %>%
+  top_n(25, crash_rate) %>%
+  mutate(std.error=(upper-lower)/2) %>%
   ggplot(aes(x=reorder(lad19nm, crash_rate), y=crash_rate)) +
   stat_dist_gradientinterval(
     aes(dist=dist_normal(mu=crash_rate, sigma=std.error)),
@@ -300,16 +300,16 @@ min_rr <- min(rr_boots_lad %>% pull(rr), na.rm = TRUE)
 # Define colours for encoding by sig type and direction.
 colours_type <- c("#762a83","#1b7837", "#878787")
 # Cast variable identifying sig type to factor.
-rr_boots_lad <- rr_boots_lad %>% 
+rr_boots_lad <- rr_boots_lad %>%
   mutate(sig_type=factor(sig_type, levels=c("greater", "less", "none")))
 names(colours_type) <- c("greater", "less", "none")
 
 # Plot
-lad %>% 
-  inner_join(rr_boots_lad) %>% 
+lad %>%
+  inner_join(rr_boots_lad) %>%
   ggplot()+
   # Colour LAD areas by sig_type (low opacity, so alphe=.3).
-  geom_sf(data=. %>% filter(crash_rate!=0), aes(fill=sig_type, colour=sig_type), 
+  geom_sf(data=. %>% filter(crash_rate!=0), aes(fill=sig_type, colour=sig_type),
           size=0.02, alpha=.3)+
   coord_sf(crs=27700, datum=NA)+
   # Draw RRs >1 and <1 sepaately.
@@ -318,7 +318,7 @@ lad %>%
     aes(x=east, y=north, angle=get_radians(map_scale(rr,1,max_rr,90,45)), colour=sig_type),
     radius=6500, position="center_spoke", size=.7
   )+
-  # Less. 
+  # Less.
   geom_spoke(
     data=. %>% filter(crash_rate!=0, rr<1),
     aes(x=east, y=north, angle=get_radians(map_scale(rr,min_rr,1,135,90)), colour=sig_type),
@@ -352,10 +352,10 @@ object to extract estimated RRs.
 
 ``` r
 boots_lad <- ped_veh %>%
-  mutate(year=lubridate::year(date)) %>% 
+  mutate(year=lubridate::year(date)) %>%
   filter(year==2019) %>%
   # Select out LAD code as no other crash context required.
-  select(lad19cd) %>% 
+  select(lad19cd) %>%
   # Nesting to collapse data to a list-col.
   nest(data=c(lad19cd)) %>%
   # Resample observations from this data frame with replacement, keep original data.
@@ -365,13 +365,13 @@ boots_lad <- ped_veh %>%
   # Map over splits and extract LAD code.
   mutate(
     lad19cd=map(splits, ~rsample::analysis(.) %>% pull(lad19cd))
-  ) %>% 
+  ) %>%
   # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
   select(-splits) %>% unnest(lad19cd) %>%
   # Summarise over bootstrap ID and LAD to generate sampling distribution of crash counts.
   group_by(id, lad19cd) %>%
-  summarise(crash_count=n()) %>% ungroup %>% 
-  left_join(lad %>% 
+  summarise(crash_count=n()) %>% ungroup %>%
+  left_join(lad %>%
               mutate(
                 growth=res_2019/res_2011,
                 workday_2019=workday*growth,
@@ -381,27 +381,27 @@ boots_lad <- ped_veh %>%
                 )
   )
 
-boots_lad <- boots_lad %>% 
-  nest(data=-id) %>% 
+boots_lad <- boots_lad %>%
+  nest(data=-id) %>%
   mutate(
     model = map(data, ~lme4::glmer(crash_count ~  (1|lad19cd) + pop_dens + offset(log_pop),
                          data=.x,
                          family = poisson)),
     bayesian_rr = map(model, ~lme4::ranef(.x) %>% as_tibble() %>%  dplyr::select(grp, condval))
-  ) %>% 
-  ungroup() %>% 
-  dplyr::select(-model) %>% 
-  unnest(c(data, bayesian_rr)) %>% 
+  ) %>%
+  ungroup() %>%
+  dplyr::select(-model) %>%
+  unnest(c(data, bayesian_rr)) %>%
   mutate(
-    bayes_rr=exp(condval), 
+    bayes_rr=exp(condval),
     rr_estimate=if_else(id=="Apparent", bayes_rr,0)
-    ) %>% 
-  group_by(lad19cd) %>% 
+    ) %>%
+  group_by(lad19cd) %>%
   summarise(
     rr_estimate=max(rr_estimate),
-    lower=quantile(bayes_rr,probs=.025), 
+    lower=quantile(bayes_rr,probs=.025),
     upper=quantile(bayes_rr,probs=.975),
-  ) 
+  )
 ```
 
 In the paper we map the updated RRs in the same way as previously. Our
@@ -426,34 +426,34 @@ randomly permuted and then joined on the `hex_map` object for plotting.
 
 ``` r
 # Generate permutation data.
-permuted_data <- 
-  boots_lad %>% 
-  ungroup() %>% 
-  select(lad19nm, rr_estimate, sig_type, is_sig) %>% 
+permuted_data <-
+  boots_lad %>%
+  ungroup() %>%
+  select(lad19nm, rr_estimate, sig_type, is_sig) %>%
   permutations(permute=c(lad19nm), times=8, apparent=TRUE) %>%
-  mutate(data=map(splits, ~rsample::analysis(.))) %>% 
-  select(id, data) %>% 
-  unnest(cols=data) 
+  mutate(data=map(splits, ~rsample::analysis(.))) %>%
+  select(id, data) %>%
+  unnest(cols=data)
 
 # Join on hex cartogram file.
-permuted_data_geo <- hex_map %>% 
+permuted_data_geo <- hex_map %>%
    inner_join(lad_region_lookup %>% dplyr::select(lad19cd, lad19nm, region_abbr),
-              by=c("lad_code"="lad19cd")) %>% dplyr::select(-id) %>% 
-  left_join(permuted_data) 
+              by=c("lad_code"="lad19cd")) %>% dplyr::select(-id) %>%
+  left_join(permuted_data)
 
 # Plot as line-up.
-permuted_data_geo %>% 
-  filter(!is.na(id)) %>% 
+permuted_data_geo %>%
+  filter(!is.na(id)) %>%
   ggplot()+
   geom_sf(aes(fill=sig_type, alpha=is_sig, colour=sig_type), size=0.05)+
   coord_sf(datum=NA)+
-  # Greater. 
+  # Greater.
   geom_spoke(
     data=. %>% filter(rr_estimate>1),
     aes(x=east, y=north, angle=get_radians(map_scale(rr_estimate,1,max_rr,90,45)), colour=sig_type),
     size=.3, radius=.4, position="center_spoke"
   )+
-  # Less. 
+  # Less.
   geom_spoke(
     data=. %>% filter(rr_estimate<1),
     aes(x=east, y=north, angle=get_radians(map_scale(rr_estimate,min_rr,1,135,90)), colour=sig_type),
@@ -461,7 +461,7 @@ permuted_data_geo %>%
   )+
   facet_wrap(~id)+
   scale_fill_manual(values=colours_type) +
-  scale_colour_manual(values=colours_type) +    
+  scale_colour_manual(values=colours_type) +
   guides(fill=FALSE, colour=FALSE, size=FALSE, alpha=FALSE)+
-  theme_paper() 
+  theme_paper()
 ```

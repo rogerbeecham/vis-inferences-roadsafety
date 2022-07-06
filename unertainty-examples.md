@@ -12,9 +12,9 @@ injury (KSI) – vary between local authority reporting areas.
 
 Please cite:
 
-Beecham, R. and Lovelace, R. *A framework for inserting
+Beecham, R. and Lovelace, R. "A framework for inserting
 visually-supported inferences into geographical analysis workflow:
-application to road crash analysis*. DOI: []().
+application to road crash analysis", *Geographical Analysis*. DOI: [0.1111/gean.12338](https://doi.org/10.1111/gean.12338).
 
 ## Setup
 
@@ -31,7 +31,7 @@ pkgs <- c("tidyverse","sf", "here", "rsample", "ggdist", "distributional", "ggan
 # If not already installed.
 # install.packages(pkgs)
 # Core packages.
-library(tidyverse)              # Bundle of packages for data manipulation. 
+library(tidyverse)              # Bundle of packages for data manipulation.
 library(sf)                     # For working with geospatial data.
 ```
 
@@ -42,7 +42,7 @@ additional short helper functions. Load these into the environment using
 the call to `source()` below.
 
 ``` r
-# Load plot helper functions. 
+# Load plot helper functions.
 source(here::here("R", "plot_helpers.R"))
 ```
 
@@ -58,9 +58,9 @@ I have placed these in the [`/data`](/data) folder.
 # Crash data.
 ped_veh <- fst::read_fst(here::here("data", "ped_veh.fst"))
 
-# LAD context. 
+# LAD context.
 # Boundary data simplified using mapshapr (https://github.com/mbloch/mapshaper).
-lad <- st_read(here::here("data", "lad.geojson")) 
+lad <- st_read(here::here("data", "lad.geojson"))
 ```
 
 ## Frequency framing: icon arrays
@@ -185,14 +185,14 @@ rate_boots <- ped_veh %>%
       is_ksi=map(splits, ~ rsample::analysis(.) %>% pull(is_ksi))
     ) %>%
     # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
-    select(-splits) %>% unnest(c(lad,is_ksi)) %>% ungroup %>% 
-  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>% 
+    select(-splits) %>% unnest(c(lad,is_ksi)) %>% ungroup %>%
+  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>%
   # Calculate ksi rates for resamples.
-  group_by(lad, id) %>% 
+  group_by(lad, id) %>%
   summarise(
     ksi_rate= mean(is_ksi),
     sample_size=n()
-  )  
+  )
 ```
 
 ## Uncertainty representation: gradients/half-eyes
@@ -220,8 +220,8 @@ rate_boots %>%
   group_by(lad) %>%
   # Calculate ranges.
   mutate(
-    std.error=sd(ksi_rate), 
-    lower=quantile(ksi_rate,probs=.025), 
+    std.error=sd(ksi_rate),
+    lower=quantile(ksi_rate,probs=.025),
     upper=quantile(ksi_rate,probs=.975)
     ) %>%
   filter(id=="Apparent") %>%
@@ -272,17 +272,17 @@ rate_boots_temporal <- ped_veh %>%
       year=map(splits, ~ rsample::analysis(.) %>% pull(year))
     ) %>%
     # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
-    select(-splits) %>% unnest(c(lad,is_ksi, year)) %>% ungroup %>% 
-  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>% 
+    select(-splits) %>% unnest(c(lad,is_ksi, year)) %>% ungroup %>%
+  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>%
   # Calculate ksi rates for resamples.
-  group_by(lad, id, year) %>% 
+  group_by(lad, id, year) %>%
   summarise(
     ksi_rate= mean(is_ksi),
     sample_size=n()
-  )  
+  )
 
 # Animate over bootstrap resamples using gganimate::transition_states().
-rate_boots_temporal %>% ungroup() %>% 
+rate_boots_temporal %>% ungroup() %>%
   mutate(
     year=as.character(year),
     lad=factor(

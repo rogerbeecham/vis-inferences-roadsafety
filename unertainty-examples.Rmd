@@ -1,6 +1,6 @@
 ---
 title: "Demonstration of uncertainty visualization techniques"
-output: 
+output:
    github_document
 ---
 
@@ -10,12 +10,14 @@ This document demonstrates how the uncertainty visualization techniques enumerat
 
 Please cite:
 
-Beecham, R. and Lovelace, R. _A framework for inserting visually-supported inferences into geographical analysis workflow: application to road crash analysis_. DOI: []().
+Beecham, R. and Lovelace, R. "A framework for inserting
+visually-supported inferences into geographical analysis workflow:
+application to road crash analysis", *Geographical Analysis*. DOI: [0.1111/gean.12338](https://doi.org/10.1111/gean.12338).
 
 
 ## Setup
 
-### Required libraries 
+### Required libraries
 
 If you do not have them, the required packages can be installed individually with `install.packages(<package_name>)`. Core packages are imported into the session with `library(<package_name>)`. Occasional use of packages is made with the `<package-name>::<function-name>()` syntax so as to avoid polluting the workspace.
 
@@ -25,7 +27,7 @@ pkgs <- c("tidyverse","sf", "here", "rsample", "ggdist", "distributional", "ggan
 # If not already installed.
 # install.packages(pkgs)
 # Core packages.
-library(tidyverse)              # Bundle of packages for data manipulation. 
+library(tidyverse)              # Bundle of packages for data manipulation.
 library(sf)                     # For working with geospatial data.
 ```
 
@@ -35,7 +37,7 @@ library(sf)                     # For working with geospatial data.
 I have created a `ggplot` theme for the plots in the paper and some additional short helper functions. Load these into the environment using the call to `source()` below.
 
 ```{r, set-themes, eval=FALSE}
-# Load plot helper functions. 
+# Load plot helper functions.
 source(here::here("R", "plot_helpers.R"))
 ```
 
@@ -48,9 +50,9 @@ Load the pre-prepared crash data, described in [`data-processing.md`](data-proce
 # Crash data.
 ped_veh <- fst::read_fst(here::here("data", "ped_veh.fst"))
 
-# LAD context. 
+# LAD context.
 # Boundary data simplified using mapshapr (https://github.com/mbloch/mapshaper).
-lad <- st_read(here::here("data", "lad.geojson")) 
+lad <- st_read(here::here("data", "lad.geojson"))
 ```
 
 ## Frequency framing: icon arrays
@@ -94,7 +96,7 @@ array_data %>%
 
 ## Uncertainty quantification: bootstrapping
 
-In the icon arrays above I made little of the fact that the sample size varies between the two recorded crash rates. Partly this was because the differences were reasonably small. When looking at injury severity rates across all local authorities, however, there is substantial variation in the rates and sample sizes. Bromsgrove has a very low injury severity rate based on a small sample size (4%, or one out of 27 crashes resulting in KSI); Cotswold has a very high injury severity rate based on a small sample size (75%, or 14 out of 19 crashes resulting in KSI). With some prior knowledge of these areas, one might expect the difference in KSI rates to be in this direction, but would we expect the difference to be of this order of magnitude? Just eight more KSIs recorded in Bromsgrove makes its KSI rate equivalent to that of Bristol’s. 
+In the icon arrays above I made little of the fact that the sample size varies between the two recorded crash rates. Partly this was because the differences were reasonably small. When looking at injury severity rates across all local authorities, however, there is substantial variation in the rates and sample sizes. Bromsgrove has a very low injury severity rate based on a small sample size (4%, or one out of 27 crashes resulting in KSI); Cotswold has a very high injury severity rate based on a small sample size (75%, or 14 out of 19 crashes resulting in KSI). With some prior knowledge of these areas, one might expect the difference in KSI rates to be in this direction, but would we expect the difference to be of this order of magnitude? Just eight more KSIs recorded in Bromsgrove makes its KSI rate equivalent to that of Bristol’s.
 
 Although STATS19 is a population dataset to the extent that it contains data on every crash recorded by the Police, it makes sense that the more data on which our KSI rates are based, the more certainty we have in them being reliable estimates of injury severity. So we want a way of expressing this uncertainty and making it intrinsic to any comparisons that are made. We regard our observed data as a sample of an (unobtainable) population and calculated KSI rates as parameters that try to represent, or estimate, this population. From here we can apply some statistical concepts to quantify uncertainty around the calculated KSI rates: that a sampling distribution can be derived and used to quantify the precision of each KSI rate estimate. This sampling distribution is generated empirically below via a non-parametric bootstrap consisting of 1000 resamples with replacement. Upper and lower limits are lifted from .025 and .975 percentile positions of the bootstrap sampling distribution.
 
@@ -122,19 +124,19 @@ rate_boots <- ped_veh %>%
       is_ksi=map(splits, ~ rsample::analysis(.) %>% pull(is_ksi))
     ) %>%
     # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
-    select(-splits) %>% unnest(c(lad,is_ksi)) %>% ungroup %>% 
-  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>% 
+    select(-splits) %>% unnest(c(lad,is_ksi)) %>% ungroup %>%
+  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>%
   # Calculate ksi rates for resamples.
-  group_by(lad, id) %>% 
+  group_by(lad, id) %>%
   summarise(
     ksi_rate= mean(is_ksi),
     sample_size=n()
-  )  
+  )
 ```
 
 ## Uncertainty representation: gradients/half-eyes
 
-Typically the ranges computed above might be represented as error bars. There are problems with such a representation -- the hard borders of the error bars can lead to unhelpful binary/dichotomous thinking (e.g. [Correll and Gleicher 2014](https://ieeexplore.ieee.org/document/6875915)). Certain values within the empirical bootstrap distribution are more probable than others and so we should endeavour to use a visual encoding that reflects this. Matt Kay’s excellent [`ggdist`](https://mjskay.github.io/ggdist/) package extends `ggplot2` with a collection of chart idioms for representing these sorts of intervals. 
+Typically the ranges computed above might be represented as error bars. There are problems with such a representation -- the hard borders of the error bars can lead to unhelpful binary/dichotomous thinking (e.g. [Correll and Gleicher 2014](https://ieeexplore.ieee.org/document/6875915)). Certain values within the empirical bootstrap distribution are more probable than others and so we should endeavour to use a visual encoding that reflects this. Matt Kay’s excellent [`ggdist`](https://mjskay.github.io/ggdist/) package extends `ggplot2` with a collection of chart idioms for representing these sorts of intervals.
 
 Below are half eye plots and gradient bars, implemented using `ggdist`, which give greater visual saliency to parameter estimates that are more likely.
 
@@ -145,8 +147,8 @@ rate_boots %>%
   group_by(lad) %>%
   # Calculate ranges.
   mutate(
-    std.error=sd(ksi_rate), 
-    lower=quantile(ksi_rate,probs=.025), 
+    std.error=sd(ksi_rate),
+    lower=quantile(ksi_rate,probs=.025),
     upper=quantile(ksi_rate,probs=.975)
     ) %>%
   filter(id=="Apparent") %>%
@@ -189,17 +191,17 @@ rate_boots_temporal <- ped_veh %>%
       year=map(splits, ~ rsample::analysis(.) %>% pull(year))
     ) %>%
     # Unnest to data frame where each observation is a bootstrap ID and sampled LAD.
-    select(-splits) %>% unnest(c(lad,is_ksi, year)) %>% ungroup %>% 
-  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>% 
+    select(-splits) %>% unnest(c(lad,is_ksi, year)) %>% ungroup %>%
+  filter(lad %in% c("Bristol, City of", "Sheffield", "Bromsgrove", "Cotswold")) %>%
   # Calculate ksi rates for resamples.
-  group_by(lad, id, year) %>% 
+  group_by(lad, id, year) %>%
   summarise(
     ksi_rate= mean(is_ksi),
     sample_size=n()
-  )  
+  )
 
 # Animate over bootstrap resamples using gganimate::transition_states().
-rate_boots_temporal %>% ungroup() %>% 
+rate_boots_temporal %>% ungroup() %>%
   mutate(
     year=as.character(year),
     lad=factor(
@@ -222,4 +224,3 @@ rate_boots_temporal %>% ungroup() %>%
     title="Hypothetical outcome plots",
     subtitle="--Year-on-year KSI rates")
 ```
-

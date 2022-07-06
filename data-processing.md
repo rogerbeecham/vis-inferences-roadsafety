@@ -8,9 +8,9 @@ STATS19 crash data that underpins our data analysis.
 
 Please cite:
 
-Beecham, R. and Lovelace, R. *A framework for inserting
+Beecham, R. and Lovelace, R. "A framework for inserting
 visually-supported inferences into geographical analysis workflow:
-application to road crash analysis*. DOI: []().
+application to road crash analysis", *Geographical Analysis. DOI: [0.1111/gean.12338](https://doi.org/10.1111/gean.12338).
 
 ## Setup
 
@@ -27,7 +27,7 @@ pkgs <- c("tidyverse","sf","stats19", "trafficalmr", "here")
 # If not already installed.
 # install.packages(pkgs)
 # Core packages
-library(tidyverse)              # Bundle of packages for data manipulation. 
+library(tidyverse)              # Bundle of packages for data manipulation.
 library(sf)                     # For working with geospatial data.
 ```
 
@@ -43,13 +43,13 @@ from [`trafficcalmr`]().
 years <- 2009:2019
 crashes_all <- stats19::get_stats19(year=years, type="accident")
 casualties_all <- stats19::get_stats19(year=years, type="Casualty")
-vehicles_all <-  stats19::get_stats19(year=years, type="Vehicle")     
+vehicles_all <-  stats19::get_stats19(year=years, type="Vehicle")
 # Recode
-casualties_all <- casualties_all %>% 
+casualties_all <- casualties_all %>%
   mutate(casualty_type=trafficalmr::tc_recode_casualties(casualty_type))
-vehicles_all <- vehicles_all %>% 
+vehicles_all <- vehicles_all %>%
   mutate(vehicle_type=trafficalmr::tc_recode_vehicle_type(vehicle_type))
-crashes_all <- crashes_all %>% 
+crashes_all <- crashes_all %>%
   mutate(speed_limit=trafficalmr::tc_recode_speeds_uk(speed_limit))
 ```
 

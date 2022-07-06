@@ -10,9 +10,9 @@ paper.
 
 Please cite:
 
-Beecham, R. and Lovelace, R. *A framework for inserting
+Beecham, R. and Lovelace, R. "A framework for inserting
 visually-supported inferences into geographical analysis workflow:
-application to road crash analysis*. DOI: []().
+application to road crash analysis", *Geographical Analysis*. DOI: [0.1111/gean.12338](https://doi.org/10.1111/gean.12338).
 
 ## Setup
 
@@ -29,7 +29,7 @@ pkgs <- c("tidyverse","sf", "here", "lme4")
 # If not already installed.
 # install.packages(pkgs)
 # Core packages.
-library(tidyverse)              # Bundle of packages for data manipulation. 
+library(tidyverse)              # Bundle of packages for data manipulation.
 library(sf)                     # For working with geospatial data.
 ```
 
@@ -40,7 +40,7 @@ additional short helper functions. Load these into the environment using
 the call to `source()` below.
 
 ``` r
-# Load plot helper functions. 
+# Load plot helper functions.
 source(here::here("R", "plot_helpers.R"))
 ```
 
@@ -57,7 +57,7 @@ ped_veh <- fst::read_fst(here::here("data", "ped_veh.fst"))
 
 # IMD data.
 temp_url <- "https://opendata.arcgis.com/datasets/3db665d50b1441bc82bb1fee74ccc95a_0.csv"
-imd <- read_csv(temp_url) 
+imd <- read_csv(temp_url)
 ```
 
 ## Data processing
@@ -70,7 +70,7 @@ the `LSOACD` variable.
 
 ``` r
 # Identify quintile positions from IMD ranks.
-imd <- imd %>% 
+imd <- imd %>%
   mutate(
     quintile=ntile(IMD19,5),
     crash_quintile=case_when(
@@ -128,34 +128,34 @@ residuals assuming independence in pedestrian-driver crash frequencies
 are generated from the row and column totals of the contingency table.
 
 ``` r
-model_ped_veh <- ped_veh %>% 
+model_ped_veh <- ped_veh %>%
   # Obs where the IMD class of pedestrian, driver and location is available.
   filter(
     !is.na(casualty_imd_decile), !is.na(driver_imd_decile),
-    casualty_imd_decile!="Data missing or out of range", 
+    casualty_imd_decile!="Data missing or out of range",
     driver_imd_decile!="Data missing or out of range", !is.na(crash_quintile)
     ) %>%
-  # Record the grand_total: total pedestrian crashes. 
-  mutate(grand_total=n()) %>% 
+  # Record the grand_total: total pedestrian crashes.
+  mutate(grand_total=n()) %>%
   # Record the row_total: total crashes for each IMD class of driver.
-  group_by(driver_imd_quintile) %>% 
+  group_by(driver_imd_quintile) %>%
   mutate(row_total=n()) %>% ungroup %>%
   # Record the col_total: total crashes for each IMD class of pedestrian.
-  group_by(casualty_imd_quintile) %>% 
-  mutate(col_total=n()) %>% ungroup %>% 
+  group_by(casualty_imd_quintile) %>%
+  mutate(col_total=n()) %>% ungroup %>%
   # Calculate over observed cells: each ped-driver IMD class combination.
-  group_by(casualty_imd_quintile, driver_imd_quintile) %>% 
+  group_by(casualty_imd_quintile, driver_imd_quintile) %>%
   summarise(
     # Observed crashes per ped-driver combination cell.
-    observed=n(), 
+    observed=n(),
     # row_total for that cell.
-    row_total=first(row_total), 
+    row_total=first(row_total),
     # col_total for that cell.
     col_total=first(col_total),
     grand_total=first(grand_total),
     # expected counts as per chi-square assumption of independence.
     expected=(row_total*col_total)/grand_total,
-    # Residuals measure relative difference biased towards larger numbers 
+    # Residuals measure relative difference biased towards larger numbers
     # due to sqrt() transformation in denominator.
     resid=(observed-expected)/sqrt(expected),
   ) %>% ungroup
@@ -169,7 +169,7 @@ distance for pedestrian-driver-location corresponding to each position
 of the 5x5x5 contingency table.
 
 ``` r
-demog_distances <- 
+demog_distances <-
   ped_veh %>%
   # Obs where the IMD class of pedestrian, driver and location is available.
   filter(
@@ -180,7 +180,7 @@ demog_distances <-
   mutate(
     # Derive numeric values from IMD classes (ordered factor variable).
     across(
-      c(casualty_imd_quintile, driver_imd_quintile, crash_quintile), 
+      c(casualty_imd_quintile, driver_imd_quintile, crash_quintile),
       .fns=list(num=~as.numeric(factor(., levels=c(c("1 most deprived", "2 more deprived", "3 mid deprived", "4 less deprived", "5 least deprived")))))
     ),
     # Calculate demog_distance.
@@ -192,17 +192,17 @@ demog_distances <-
   ) %>%
   # Calculate over observed cells: each ped-driver IMD class combination.
   group_by(casualty_imd_quintile, driver_imd_quintile, crash_quintile) %>%
-  summarise(crash_count=n(), demog_dist=first(demog_dist)) %>%  ungroup() 
+  summarise(crash_count=n(), demog_dist=first(demog_dist)) %>%  ungroup()
 
-# Model crash count against demographic distance allowing the intercept to vary 
-# on crash quintile. There may be some biasing in the distribution of counts due 
-# to crash quintile (linked to systematic differences in rurality) and so we 
+# Model crash count against demographic distance allowing the intercept to vary
+# on crash quintile. There may be some biasing in the distribution of counts due
+# to crash quintile (linked to systematic differences in rurality) and so we
 # want to observe the association net of this.
-model <- lme4::glmer(crash_count ~ demog_dist + ( 1 | crash_quintile), 
+model <- lme4::glmer(crash_count ~ demog_dist + ( 1 | crash_quintile),
                      data=demog_distances, family=poisson, nAGQ = 100)
 
 # Extract model residuals.
-demog_distances <- demog_distances %>% 
+demog_distances <- demog_distances %>%
   mutate(ml_resids=residuals(model, type="pearson"))
 ```
 
@@ -222,10 +222,10 @@ model_ped_veh %>%
   geom_tile(aes(fill=resid), colour="#707070", size=.2) +
   # Make colour scale symmetrical on 0.
   scale_fill_distiller(
-    palette="PRGn", direction=-1, 
+    palette="PRGn", direction=-1,
     limits=c(-max(model_ped_veh$resid %>% abs()), max(model_ped_veh$resid %>% abs()))) +
   coord_equal() +
-  theme_paper() 
+  theme_paper()
 
 # Model 2.
 demog_distances %>%
@@ -238,5 +238,5 @@ demog_distances %>%
   )+
   facet_wrap(~crash_quintile) +
   coord_equal() +
-  theme_paper() 
+  theme_paper()
 ```
